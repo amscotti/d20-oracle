@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - name: fmt
+        run: test -z "$(gofmt -l .)"
+      - name: lint
+        run: mise run lint
+      - name: lint config
+        run: golangci-lint config verify
+      - name: test
+        run: mise run test
+      - name: coverage
+        run: |
+          mise run coverage
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
+          awk -v t="$total" 'BEGIN { printf "total coverage: %.1f%%\n", t; if (t < 75) exit 1 }'
+      - name: build
+        run: mise run build
+      - name: smoke
+        run: |
+          ./d20-oracle -addr 127.0.0.1:18099 &
+          pid=$!
+          trap 'kill $pid' EXIT
+          sleep 2
+          curl -sf http://127.0.0.1:18099/health
+          curl -sf http://127.0.0.1:18099/ | grep -q "Roll for class."
+          code="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            -d 'name=Sam&profession=barista' http://127.0.0.1:18099/api/class)"
+          test "$code" = 503
+      - name: docker build
+        run: docker build -t d20-oracle:ci .
+      - name: docker smoke
+        run: |
+          trap 'docker rm --force d20-oracle-ci >/dev/null 2>&1 || true' EXIT
+          docker run --detach --rm --name d20-oracle-ci --read-only \
+            --publish 127.0.0.1:18098:8080 d20-oracle:ci
+          curl --fail --silent --show-error --max-time 10 --retry 5 --retry-connrefused \
+            --retry-delay 1 http://127.0.0.1:18098/health
+          page="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:18098/)"
+          [[ "$page" == *"Roll for class."* ]]

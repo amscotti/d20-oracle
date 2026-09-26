@@ -1,0 +1,17 @@
+# Send only build inputs. In particular, .env, git history, and local binaries
+# stay outside the build context.
+**
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!web/
+!web/**
+!LICENSE
+
+# Tests run separately; the image needs only the application and embedded assets.
+**/*_test.go
+**/.env*
+**/.DS_Store

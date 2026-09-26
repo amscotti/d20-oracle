@@ -1,0 +1,224 @@
+{{define "page"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>d20 oracle — what class are you?</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,4 92,28 92,72 50,96 8,72 8,28' fill='%237B2D26'/%3E%3Ctext x='50' y='62' font-size='44' text-anchor='middle' fill='%23F2E5C8' font-family='serif'%3E20%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Roll a d20 for destiny and a d6 for a little weirdness. Discover your Dungeons & Dragons class with the Jev oracle.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Pirata+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/open-props@1.7.23/open-props.min.css" integrity="sha384-fsyUJwnN3qLArJUL5oaEYS3/WnhCmI4K5x+oB8wFigOMTJaIvys56ozH3+nE/qcf" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+  <script src="https://unpkg.com/htmx.org@4.0.0/dist/htmx.min.js" integrity="sha384-BvJpBiO8Kh31EqtJe5DRIeWrHWnCGkwytKs9NKFi86Hhw96dEqdEMzZDeK9iEGTc" crossorigin="anonymous" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.17.4/dist/cdn.min.js" integrity="sha384-5/joNqFnRyVWzXp99bHot6RHG+EksGp+USSgZwPar7T9SD9PKKER37n/8bXBAZGd" crossorigin="anonymous" defer></script>
+</head>
+<body x-data="oracle()">
+  <header class="chrome">
+    <span class="brand"><span class="brand-mark" aria-hidden="true">{{template "d20" 20}}</span> d20 oracle</span>
+    <span class="tagline">Honest dice. Questionable prophecies.</span>
+    <a class="powered-by" href="https://docs.typesafe.ai">A Jev experiment ↗</a>
+  </header>
+
+  <p id="oracle-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <main id="oracle-app">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Twelve classes · two honest dice</p>
+        <h1>Roll for class.</h1>
+      </div>
+      <p class="sub">Your name. Your trade. A d20 for destiny,<br class="desktop-break"> a d6 for a little weirdness.</p>
+    </section>
+
+    <div class="folio">
+      <aside class="adventurer" aria-labelledby="adventurer-title">
+        <div class="panel-heading">
+          <p class="eyebrow">Write yourself in</p>
+          <h2 id="adventurer-title">The adventurer</h2>
+        </div>
+        <form id="adventurer-form" action="/api/class" method="post"
+              hx-post="/api/class" hx-target="#results" hx-swap="innerHTML"
+              hx-sync="#oracle-app:drop" hx-disable=".roll-btn" hx-indicator="#rolling">
+          <div class="fields">
+            <div class="field">
+              <label for="name">Your name</label>
+              <input id="name" name="name" maxlength="60" pattern=".*\S.*" title="Use at least one non-space character" autocomplete="name" placeholder="e.g. Sam" x-model="name" required>
+            </div>
+            <div class="field">
+              <label for="profession">Profession or trade</label>
+              <input id="profession" name="profession" maxlength="60" pattern=".*\S.*" title="Use at least one non-space character" placeholder="e.g. barista" x-model="profession" required>
+            </div>
+          </div>
+          <p class="oracle-sees">The oracle sees:<br><strong x-text="seen || 'a mysterious stranger'">a mysterious stranger</strong></p>
+          <button type="submit" class="roll-btn">Roll the dice</button>
+          <div id="rolling" class="rolling" aria-hidden="true">
+            <span class="rolling-dice">{{template "d20" 0}}{{template "d6" 0}}</span>
+            <span>The oracle is reading the omen…</span>
+          </div>
+        </form>
+
+        <details class="dice-guide">
+          <summary>How do the dice work?</summary>
+          <dl>
+            <dt>d20 · Destiny</dt>
+            <dd>Your name and trade lead. The d20 nudges Jev: a natural 20 invites a legendary calling; a natural 1 invites a little chaos. A clear class match can win on any roll.</dd>
+            <dt>d6 · Quirk</dt>
+            <dd>Once the class is chosen, the d6 picks one of six original quirks for it. A little personality, with every roll.</dd>
+          </dl>
+          <p>The d20 is a prompt hint, with no fixed numerical bonus. The d6 is a local lookup. One quick Jev decision ties it together.</p>
+        </details>
+        <p class="margin-note">Every class has a story.<br>Yours probably includes snacks.</p>
+      </aside>
+
+      <section id="results" aria-label="The oracle's reading" aria-busy="false">
+        {{if .R}}{{template "results" .}}{{else if .Message}}{{template "error" .}}{{else}}{{template "idle" .}}{{end}}
+      </section>
+    </div>
+  </main>
+
+  <template id="connection-error">
+    <article class="reading error-card">
+      <p class="eyebrow">A wayward omen</p>
+      <h2 id="reading-title" tabindex="-1">The oracle lost the thread.</h2>
+      <p class="lore">Check your connection, then try another roll.</p>
+      <button type="button" class="roll-btn ghost" data-retry>Try again</button>
+    </article>
+  </template>
+
+  <footer>Not affiliated with Wizards of the Coast. Original lore, questionable wisdom, and two honest dice.</footer>
+</body>
+</html>{{end}}
+
+{{define "idle"}}
+<div class="idle">
+  <div class="idle-dice-pair">
+    <div class="idle-die destiny">{{template "d20" 0}}<span>d20 · Destiny</span></div>
+    <div class="idle-die quirk">{{template "d6" 0}}<span>d6 · Quirk</span></div>
+  </div>
+  <p class="eyebrow">A character waiting to happen</p>
+  <h2>Your story is still unwritten.</h2>
+  <p>Give the oracle a name and a trade.<br>Roll the dice and see who answers the call.</p>
+  <p class="idle-footnote">Twelve possible callings. An unreasonable amount of destiny.</p>
+</div>
+{{end}}
+
+{{define "results"}}
+<article class="reading">
+  <div class="result-head">
+    <div class="crest" aria-hidden="true">{{.R.Class.Symbol}}</div>
+    <div class="result-heading">
+      <p class="reading-person">{{.R.Name}} the {{.R.Profession}}</p>
+      <p class="eyebrow">Your calling is</p>
+      <h2 id="reading-title" class="class-name" tabindex="-1">{{.R.Class.Name}}</h2>
+    </div>
+  </div>
+  <p class="calling-blurb">{{.R.Class.Blurb}}</p>
+
+  <div class="result-dice" aria-label="Your dice rolls">
+    <div class="die-note">
+      <div class="die-frame {{if eq .R.Roll 20}}nat20{{else if eq .R.Roll 1}}nat1{{end}}">{{template "d20" .R.Roll}}</div>
+      <div class="die-copy">
+        <p class="die-label">d20 · Destiny</p>
+        <p class="die-caption">{{if eq .R.Roll 20}}<strong>Natural 20.</strong><br>A legendary omen.{{else if eq .R.Roll 1}}<strong>Natural 1.</strong><br>Embrace the chaos.{{else}}Fate got a vote.{{end}}</p>
+      </div>
+    </div>
+    <div class="die-note">
+      <div class="die-frame quirk-frame">{{template "d6" .R.QuirkRoll}}</div>
+      <div class="die-copy">
+        <p class="die-label">d6 · Quirk</p>
+        <p class="die-caption">Face <strong>{{.R.QuirkRoll}}</strong>.<br>A little weirdness.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="rolled-quirk" aria-labelledby="quirk-title">
+    <h3 id="quirk-title">Your rolled quirk</h3>
+    <p>{{.R.Quirk}}</p>
+  </section>
+  <ul class="traits">
+    {{- range .Class.Traits}}<li>{{.}}</li>{{end -}}
+  </ul>
+  <details class="class-story">
+    <summary>Your class story</summary>
+    <p class="lore">{{.Class.Description}}</p>
+  </details>
+
+  <div class="confidence">
+    <p class="meter-label">oracle confidence <strong>{{pct .R.Confidence}}</strong></p>
+    <div class="meter" aria-hidden="true"><span style="width: {{pct .R.Confidence}}"></span></div>
+  </div>
+
+  {{- $runnersUp := visibleRunnersUp .R.RunnersUp}}
+  {{- if $runnersUp}}
+  <section class="close-calls">
+    <h3>Other paths</h3>
+    <div class="calls">
+      {{- range $runnersUp}}
+      <div class="call">
+        <div class="mini-crest" aria-hidden="true">{{.Symbol}}</div>
+        <div class="call-body">
+          <p class="call-name">{{.Name}} <span class="prob">{{pct .Probability}}</span></p>
+          <p class="call-blurb">{{.Blurb}}</p>
+          <div class="bar" aria-hidden="true"><span style="width: {{pct .Probability}}"></span></div>
+        </div>
+      </div>
+      {{- end}}
+    </div>
+  </section>
+  {{- else}}
+  <p class="single-path">The oracle sees only one path for you.</p>
+  {{- end}}
+
+  <div class="reading-tools">
+    <button type="button" class="roll-btn ghost" hx-post="/api/class" hx-target="#results" hx-swap="innerHTML"
+            hx-include="#adventurer-form" hx-sync="#oracle-app:drop" hx-disable=".roll-btn" hx-indicator="#rolling">Roll again</button>
+    <details class="provenance">
+      <summary>Behind the screen</summary>
+      <dl>
+        <dt>Oracle</dt><dd>{{.R.Model}}</dd>
+        <dt>Decision</dt><dd>{{.R.LatencyMS}} ms · one Jev call</dd>
+        <dt>Class match</dt><dd>{{pct .R.Class.Probability}}</dd>
+      </dl>
+      <p>Jev chooses the class. Your d6 chooses its quirk.</p>
+    </details>
+  </div>
+</article>
+{{end}}
+
+{{define "error"}}
+<article class="reading error-card">
+  <p class="eyebrow">A wayward omen</p>
+  <h2 id="reading-title" tabindex="-1">An omen went missing.</h2>
+  <p class="lore">{{.Message}}</p>
+  <button type="button" class="roll-btn ghost" hx-post="/api/class" hx-target="#results" hx-swap="innerHTML"
+          hx-include="#adventurer-form" hx-sync="#oracle-app:drop" hx-disable=".roll-btn" hx-indicator="#rolling">Try again</button>
+</article>
+{{end}}
+
+{{define "d20"}}
+<svg class="die" viewBox="0 0 100 100" role="img" aria-label="Destiny d20 {{if .}}showing {{.}}{{else}}waiting for a roll{{end}}">
+  <polygon class="die-face" points="50,4 92,28 92,72 50,96 8,72 8,28"></polygon>
+  <polygon class="die-inner" points="28,32 72,32 50,72"></polygon>
+  <path class="die-lines" d="M50 4 L28 32 M50 4 L72 32 M92 28 L72 32 M8 28 L28 32 M92 72 L50 72 M8 72 L50 72 M50 96 L50 72"></path>
+  <text class="die-num" x="50" y="52" text-anchor="middle" dominant-baseline="middle">{{if .}}{{.}}{{else}}?{{end}}</text>
+</svg>
+{{end}}
+
+{{define "d6"}}
+<svg class="die" viewBox="0 0 100 100" role="img" aria-label="Quirk d6 {{if .}}showing {{.}}{{else}}waiting for a roll{{end}}">
+  <polygon class="die-side" points="70,27 91,14 91,68 70,82"></polygon>
+  <polygon class="die-top" points="19,27 40,14 91,14 70,27"></polygon>
+  <rect class="die-face" x="19" y="27" width="51" height="55" rx="3"></rect>
+  {{if .}}
+    {{if or (eq . 1) (eq . 3) (eq . 5)}}<circle class="die-pip" cx="45" cy="55" r="4"></circle>{{end}}
+    {{if ge . 2}}<circle class="die-pip" cx="32" cy="41" r="4"></circle><circle class="die-pip" cx="58" cy="69" r="4"></circle>{{end}}
+    {{if ge . 4}}<circle class="die-pip" cx="58" cy="41" r="4"></circle><circle class="die-pip" cx="32" cy="69" r="4"></circle>{{end}}
+    {{if eq . 6}}<circle class="die-pip" cx="32" cy="55" r="4"></circle><circle class="die-pip" cx="58" cy="55" r="4"></circle>{{end}}
+  {{else}}
+    <text class="die-num" x="45" y="57" text-anchor="middle" dominant-baseline="middle">?</text>
+  {{end}}
+</svg>
+{{end}}

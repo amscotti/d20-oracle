@@ -1,0 +1,24 @@
+# Build artifacts
+/d20-oracle
+*.exe
+*.test
+
+# Secrets — never commit keys
+.env*
+!.env.example
+
+# golangci-lint
+golangci-lint-report.xml
+
+# Test artifacts
+coverage/
+coverage.out
+coverage.html
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Playwright review artifacts
+.playwright-mcp/

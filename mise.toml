@@ -1,0 +1,31 @@
+# d20-oracle toolchain + tasks — pinned via mise. One `mise install` on a clean
+# checkout gives every contributor the same environment.
+# Tasks replace a Makefile: `mise run <task>` (fmt, lint, test, coverage, build).
+
+[tools]
+go = "1.27.3"            # core plugin
+golangci-lint = "2.14.0" # lint gate (mise run lint)
+
+[tasks.fmt]
+description = "Format Go sources"
+run = "gofmt -w ."
+
+[tasks.lint]
+description = "Lint gate (golangci-lint)"
+run = "golangci-lint run"
+
+[tasks.test]
+description = "Unit tests with the race detector"
+run = "go test -race ./..."
+
+[tasks.coverage]
+description = "Run tests and print total statement coverage"
+run = "go test -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1"
+
+[tasks.build]
+description = "Build the d20-oracle binary"
+run = "go build -o d20-oracle ./cmd/d20-oracle"
+
+[tasks.start]
+description = "Run d20-oracle locally"
+run = "go run ./cmd/d20-oracle"

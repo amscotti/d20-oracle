@@ -1,0 +1,14 @@
+# Keep secrets, VCS metadata, and local build output out of Cloud Build uploads.
+.git/
+.env*
+!.env.example
+/d20-oracle
+*.exe
+*.test
+coverage/
+coverage.out
+coverage.html
+docs/
+.DS_Store
+.idea/
+.vscode/
